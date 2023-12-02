@@ -33,6 +33,11 @@ def impute_missing_values(df):
     imputer_numerical = SimpleImputer(strategy='mean')
     df[numerical_cols] = imputer_numerical.fit_transform(df[numerical_cols])
 
+    print("Missing Values")
+    missing_values_count = df.isna().sum()
+    missing_values_count = missing_values_count[missing_values_count > 0]
+    print(missing_values_count)
+
     return df
 
 
@@ -79,12 +84,18 @@ def outliers(df):
                                    'Num_Outliers_ZScore': outliers_z_score,
                                    'Num_Outliers_IQR': outliers_iqr})
 
-    # Creating DataFrame
+    # Creating DataFrame for outliers list
     outliers_info = pd.DataFrame(outliers_info_list)
 
     print(outliers_info)
-    # Call the function
+    # Call the function to plot the outliers
     plot_outliers(df)
+
+    # Call function to cap the outliers
+    for col in numeric_cols:
+        df[col] = cap_outliers(df[col])
+
+    return df
 
 
 # Method for viewing the data types in the data frame for analysis. Good way to see what data you are working with
@@ -131,9 +142,13 @@ def apply_binary_mapping(df, binary_mapping):
 def apply_one_hot_encoding(df):
     encoded_columns = []  # Initialize a list to store encoded columns
     for col in df.columns:
-        if len(df[col].unique()) > 2 and isinstance(df[col].dtype, CategoricalDtype):
-            df = pd.get_dummies(df, columns=[col], prefix=[col], drop_first=True)
-            encoded_columns.append(col)  # Add the encoded column to the list
+        if len(df[col].unique()) > 2 and (df[col].dtype == 'object' or isinstance(df[col].dtype, CategoricalDtype)):
+            # Apply one-hot encoding
+            dummies = pd.get_dummies(df[col], prefix=col, drop_first=True)
+            df = pd.concat([df, dummies], axis=1).drop(col, axis=1)
+
+            # Append new dummy column names to the list
+            encoded_columns.extend(dummies.columns.tolist())
     return df, encoded_columns
 
 
@@ -154,11 +169,11 @@ def clean_data(data):
     # Impute missing values automatically
     data_imputed = impute_missing_values(data_no_duplicates)
 
-    # View outliers
-    outliers(data_imputed)
+    # View outliers and cap outliers
+    data_outliers = outliers(data_imputed)
 
     # Rename the survey questions (Churn Dataset only)
-    columns_renamed = rename_columns(data_imputed)
+    columns_renamed = rename_columns(data_outliers)
 
     # Create a group for columns that I want to keep around but do not want to use for analysis, then create
     columns_to_keep = ['CaseOrder', 'Customer_id', 'Interaction', 'UID', 'Zip', 'Job', 'Population', 'Lat', 'Lng',
@@ -179,14 +194,16 @@ def clean_data(data):
     x_reference = data[columns_to_keep]
     x_analysis = data_encoded
     df_analysis = data.drop(columns=columns_to_keep)
-    x_analysis.to_csv('churn_analysis.csv')
-    x_reference.to_csv('analysis_reference.csv')
+    # x_analysis.to_csv('churn_analysis.csv')
+    # x_reference.to_csv('analysis_reference.csv')
 
     # Create categories and groups of columns - Categorical and Continuous for ease of use in graphically viewing data
     categorical_columns = encoded_columns + mapped_binary_columns
+    print(categorical_columns)
+    print()
 
     continuous_list = [col for col in x_analysis.columns if col not in categorical_columns]
-    # print(continuous_list)
+    print(continuous_list)
 
     # If you need to create a list of continuous columns after encoding
     continuous_columns = [col for col in x_analysis.columns if col not in categorical_columns]

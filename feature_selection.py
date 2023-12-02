@@ -27,7 +27,7 @@ def stepwise_selection(x, y, initial_list=[], threshold_in=0.01, threshold_out=0
         if best_pval < threshold_in:
             best_feature = new_pval.idxmin()
             included.append(best_feature)
-            changed=True
+            changed = True
             if verbose:
                 print('Add  {:30} with p-value {:.6}'.format(best_feature, best_pval))
 
@@ -37,7 +37,7 @@ def stepwise_selection(x, y, initial_list=[], threshold_in=0.01, threshold_out=0
         pvalues = model.pvalues.iloc[1:]
         worst_pval = pvalues.max()  # null if pvalues is empty
         if worst_pval > threshold_out:
-            changed=True
+            changed = True
             worst_feature = pvalues.idxmax()
             included.remove(worst_feature)
             if verbose:
