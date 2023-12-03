@@ -206,6 +206,7 @@ def clean_data(data):
     df_analysis = data.drop(columns=columns_to_keep)
     # x_analysis.to_csv('churn_analysis.csv')
     # x_reference.to_csv('analysis_reference.csv')
+    x_analysis.to_csv('churn_prepared.csv')
 
     # Create categories and groups of columns - Categorical and Continuous for ease of use in graphically viewing data
     categorical_columns = encoded_columns + mapped_binary_columns
