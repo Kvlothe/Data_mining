@@ -5,13 +5,16 @@ from sklearn.impute import SimpleImputer
 from visuals import plot_outliers
 import logging
 
+# **** EDIT THIS FOR DIFFERENT DATA SETS! *****
+# look for these comments in the module as they are functions I do not have fully automated and
+# need to be changed if a different data set is used - Would like to fully automate for use on any data set
 
 # Configure logging
 logging.basicConfig(filename='data_cleaning.log', level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')
 
 
-# Attempt to cap outliers - did not improve model, new approach needed
+# Method for capping the outliers
 def cap_outliers(series, lower_percentile=5, upper_percentile=95):
     lower_limit = series.quantile(lower_percentile / 100)
     upper_limit = series.quantile(upper_percentile / 100)
@@ -56,7 +59,7 @@ def remove_duplicates(df):
     return df
 
 
-# Check the data frame for outliers and plotting the outliers as well as printing out the Z-score and IQR
+# Check the data frame for outliers then plot the outliers as well as printing out the Z-score and IQR
 # Input is the data frame for checking and the output is a folder of Box-plots of the outliers
 def outliers(df):
     # Outliers
@@ -108,6 +111,9 @@ def view_data_types(df):
             print(f"- {column}")
 
 
+# **** EDIT THIS FOR DIFFERENT DATA SETS! ***** Might just drop this bit of code
+# Would like to make this users choice, pick the columns for renaming and provide the mapping for them -
+# Not sure how to do that yet, but it is on the mind so this can be applied to more than just this dataset
 # Method for only this data set, as it renames the survey questions with the appropriate questions from the dictionary
 # Input is the data frame for analysis and returns the data frame with the columns renamed
 def rename_columns(df):
@@ -175,12 +181,16 @@ def clean_data(data):
     # Rename the survey questions (Churn Dataset only)
     columns_renamed = rename_columns(data_outliers)
 
+    # **** EDIT THIS FOR DIFFERENT DATA SETS! *****
+    # Thinking about making a selection process to pick the columns that should be excluded rather than hard-code
     # Create a group for columns that I want to keep around but do not want to use for analysis, then create
     columns_to_keep = ['CaseOrder', 'Customer_id', 'Interaction', 'UID', 'Zip', 'Job', 'Population', 'Lat', 'Lng',
                        'City', 'State', 'County', 'Area', 'PaymentMethod', 'TimeZone']
     data_analysis = columns_renamed.drop(columns=columns_to_keep)
 
-    # Encoding
+    # **** EDIT THIS FOR DIFFERENT DATA SETS! *****
+    # Would like to figure out how to make the program detect if a column is binary so the mapping is a null point
+    # Encoding - Binary and One-hot
     # Define your binary mapping
     binary_mapping = {'Yes': 1, 'No': 0, 'DSL': 1, 'Fiber Optic': 0}
 
@@ -199,14 +209,12 @@ def clean_data(data):
 
     # Create categories and groups of columns - Categorical and Continuous for ease of use in graphically viewing data
     categorical_columns = encoded_columns + mapped_binary_columns
-    print(categorical_columns)
-    print()
 
     continuous_list = [col for col in x_analysis.columns if col not in categorical_columns]
-    print(continuous_list)
 
     # If you need to create a list of continuous columns after encoding
     continuous_columns = [col for col in x_analysis.columns if col not in categorical_columns]
+
     print()
 
     return x_reference, x_analysis, encoded_columns, mapped_binary_columns, categorical_columns, \

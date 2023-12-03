@@ -11,10 +11,13 @@ from sklearn.metrics import confusion_matrix, roc_curve, auc, roc_auc_score
 import matplotlib.pyplot as plt
 
 
+# Read in the data and create a date frame - Need to edit this to have the use pick what data they want to use
 df = pd.read_csv("churn_clean.csv")
 
 x_reference, x_analysis, one_hot_columns, binary_columns, categorical_columns, \
     continuous_columns, continuous_list, df_analysis = clean_data(df)
+
+# Would like to make this a users choice - For now it is hard-coded
 dependant_variable = x_analysis['Churn']
 print("Data Cleaning and Transformation Complete")
 
@@ -69,7 +72,7 @@ cm = confusion_matrix(y_test, y_pred)
 print("Confusion Matrix:\n", cm)
 
 # ROC Curve and AUC
-fpr, tpr, thresholds = roc_curve(y_test, gnb.predict_proba(x_test)[:,1])
+fpr, tpr, thresholds = roc_curve(y_test, gnb.predict_proba(x_test)[:, 1])
 roc_auc = auc(fpr, tpr)
 
 # Plot ROC Curve

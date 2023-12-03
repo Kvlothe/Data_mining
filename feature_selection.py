@@ -13,15 +13,20 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.feature_selection import RFECV
 
 
-def stepwise_selection(x, y, initial_list=[], threshold_in=0.01, threshold_out=0.05, verbose=True):
+# Function for Stepwise Selection - foreword adding and backward elimination
+# Inputs are independent variables and the dependant variable
+# Returns the selected features, function will stop adding features if they do not improve the model
+def stepwise_selection(independent_variables, dependent_variable, initial_list=[],
+                       threshold_in=0.01, threshold_out=0.05, verbose=True):
     included = list(initial_list)
     while True:
         changed = False
         # Forward step
-        excluded = list(set(x.columns) - set(included))
+        excluded = list(set(independent_variables.columns) - set(included))
         new_pval = pd.Series(index=excluded)
         for new_column in excluded:
-            model = sm.OLS(y, sm.add_constant(pd.DataFrame(x[included + [new_column]]))).fit()
+            model = sm.OLS(dependent_variable, sm.add_constant(pd.DataFrame(independent_variables[included +
+                                                                                                  [new_column]]))).fit()
             new_pval[new_column] = model.pvalues[new_column]
         best_pval = new_pval.min()
         if best_pval < threshold_in:
@@ -32,7 +37,7 @@ def stepwise_selection(x, y, initial_list=[], threshold_in=0.01, threshold_out=0
                 print('Add  {:30} with p-value {:.6}'.format(best_feature, best_pval))
 
         # Backward step
-        model = sm.OLS(y, sm.add_constant(pd.DataFrame(x[included]))).fit()
+        model = sm.OLS(dependent_variable, sm.add_constant(pd.DataFrame(independent_variables[included]))).fit()
         # use all coefs except intercept
         pvalues = model.pvalues.iloc[1:]
         worst_pval = pvalues.max()  # null if pvalues is empty
@@ -48,13 +53,16 @@ def stepwise_selection(x, y, initial_list=[], threshold_in=0.01, threshold_out=0
     return included
 
 
-def remove_multicollinearity_vars(x, threshold=10):
+# Function for removing multicollinearity variables
+# Input is the independent variables and will return the data frame with variables removed
+# that were causing multicollinearity
+def remove_multicollinearity_vars(data, threshold=10):
     high_vif = True
     while high_vif:
         # Calculate VIFs
         vif_data = pd.DataFrame()
-        vif_data["feature"] = x.columns
-        vif_data["VIF"] = [variance_inflation_factor(x.values, i) for i in range(x.shape[1])]
+        vif_data["feature"] = data.columns
+        vif_data["VIF"] = [variance_inflation_factor(data.values, i) for i in range(data.shape[1])]
 
         # Check for variables with high VIF
         high_vif_vars = vif_data[vif_data['VIF'] > threshold]
@@ -63,10 +71,10 @@ def remove_multicollinearity_vars(x, threshold=10):
         else:
             # Remove the variable with the highest VIF
             highest_vif_var = high_vif_vars.sort_values('VIF', ascending=False).iloc[0]
-            x = x.drop(highest_vif_var['feature'], axis=1)
+            data = data.drop(highest_vif_var['feature'], axis=1)
             print(f"Removed {highest_vif_var['feature']} with VIF: {highest_vif_var['VIF']}")
 
-    return x
+    return data
 
 
 def decision_tree(x, y):
