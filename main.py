@@ -34,5 +34,7 @@ reduced_numerical_cols = remove_multicollinearity_vars(numerical_cols)
 
 # You can then combine these reduced numerical columns back with the categorical ones if needed
 final_df = pd.concat([reduced_numerical_cols, x_analysis.select_dtypes(include=['object'])], axis=1)
+final_df.to_csv("churn_analysis.csv")
+print(final_df.shape)
 
 random_forest(final_df, dependant_variable)

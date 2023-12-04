@@ -1,20 +1,25 @@
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score, classification_report
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, roc_curve, auc, roc_auc_score
 from sklearn.model_selection import GridSearchCV
 from imblearn.over_sampling import SMOTE
 from sklearn.model_selection import KFold
 import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
 
 
 def random_forest(data, dependant_variable):
     # Random forest
     # Split the dataset into training and testing sets
     x_train, x_test, y_train, y_test = train_test_split(data, dependant_variable, test_size=0.3, random_state=42)
+    x_train.to_csv("xtrain.csv")
+    x_test.to_csv("xtest.csv")
+    y_train.to_csv("ytrain.csv")
+    y_test.to_csv("ytest.csv")
 
     # Apply SMOTE
     smote = SMOTE(random_state=42)
-    x_train_smote, y_train_smote = smote.fit_resample(x_train, y_train)
 
     # Create a RandomForestClassifier
     clf = RandomForestClassifier(random_state=42)
@@ -25,7 +30,7 @@ def random_forest(data, dependant_variable):
         'max_depth': [10, 20, 30, None],
         'min_samples_split': [2, 5, 10],
         'min_samples_leaf': [1, 2, 4],
-        'max_features': ['auto', 'sqrt']
+        'max_features': ['sqrt', 'log2', None]
     }
 
     # Setup the grid search
@@ -53,7 +58,7 @@ def random_forest(data, dependant_variable):
     print(report)
 
     # Feature Importance from the fitted model
-    feature_importances = pd.Series(best_clf.feature_importances_, index=final_df.columns).sort_values(ascending=False)
+    feature_importances = pd.Series(best_clf.feature_importances_, index=data.columns).sort_values(ascending=False)
     print("Feature Importances:")
     print(feature_importances)
 
@@ -74,6 +79,34 @@ def random_forest(data, dependant_variable):
     print("New Classification Report:")
     print(new_report)
 
+    # Evaluate the model
+    print("Accuracy:", accuracy_score(y_test, y_pred))
+    print("\nClassification Report:\n", classification_report(y_test, y_pred))
+
+    # Confusion Matrix
+    cm = confusion_matrix(y_test, y_pred)
+    print("Confusion Matrix:\n", cm)
+
+    # ROC Curve and AUC
+    # Replace 'gnb' with 'random_forest_classifier'
+    fpr, tpr, thresholds = roc_curve(y_test, best_clf.predict_proba(x_test)[:, 1])
+    roc_auc = auc(fpr, tpr)
+
+    # Plot ROC Curve
+    plt.figure()
+    plt.plot(fpr, tpr, color='darkorange', lw=2, label='ROC curve (area = %0.2f)' % roc_auc)
+    plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Receiver Operating Characteristic')
+    plt.legend(loc="lower right")
+    plt.show()
+
+    # Print AUC
+    print("AUC-ROC:", roc_auc)
+
     # Define k-fold cross-validation
     kf = KFold(n_splits=5, random_state=42, shuffle=True)
 
@@ -81,19 +114,19 @@ def random_forest(data, dependant_variable):
     accuracies = []
     reports = []
 
-    for train_index, test_index in kf.split(final_df):
+    for train_index, test_index in kf.split(data):
         # Split data
-        X_train_kf, X_test_kf = final_df.iloc[train_index], final_df.iloc[test_index]
+        x_train_kf, x_test_kf = data.iloc[train_index], data.iloc[test_index]
         y_train_kf, y_test_kf = dependant_variable.iloc[train_index], dependant_variable.iloc[test_index]
 
         # Apply SMOTE
-        X_train_smote, y_train_smote = smote.fit_resample(X_train_kf, y_train_kf)
+        x_train_smote, y_train_smote = smote.fit_resample(x_train_kf, y_train_kf)
 
         # Train the model
-        best_clf.fit(X_train_smote, y_train_smote)
+        best_clf.fit(x_train_smote, y_train_smote)
 
         # Make predictions
-        y_pred_kf = best_clf.predict(X_test_kf)
+        y_pred_kf = best_clf.predict(x_test_kf)
 
         # Store results
         accuracies.append(accuracy_score(y_test_kf, y_pred_kf))

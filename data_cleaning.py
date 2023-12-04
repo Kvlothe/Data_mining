@@ -184,8 +184,7 @@ def clean_data(data):
     # **** EDIT THIS FOR DIFFERENT DATA SETS! *****
     # Thinking about making a selection process to pick the columns that should be excluded rather than hard-code
     # Create a group for columns that I want to keep around but do not want to use for analysis, then create
-    columns_to_keep = ['CaseOrder', 'Customer_id', 'Interaction', 'UID', 'Zip', 'Job', 'Population', 'Lat', 'Lng',
-                       'City', 'State', 'County', 'Area', 'PaymentMethod', 'TimeZone']
+    columns_to_keep = ['CaseOrder', 'Customer_id', 'Interaction', 'UID', 'Job']
     data_analysis = columns_renamed.drop(columns=columns_to_keep)
 
     # **** EDIT THIS FOR DIFFERENT DATA SETS! *****
@@ -203,6 +202,7 @@ def clean_data(data):
     # separate the data frames - columns to keep for later and columns for analysis
     x_reference = data[columns_to_keep]
     x_analysis = data_encoded
+    print(x_analysis.shape)
     df_analysis = data.drop(columns=columns_to_keep)
     # x_analysis.to_csv('churn_analysis.csv')
     # x_reference.to_csv('analysis_reference.csv')
